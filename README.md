@@ -61,4 +61,4 @@ Concatnate SAC files
 
 ## Copyright and License
 
-Copyright (C) 2014, Takuto Maeda, All rights reserved. All source codes included in this archive are released under the MIT License. 
+Copyright (C) 2014-2015, Takuto Maeda, All rights reserved. All source codes included in this archive are released under the MIT License. 
