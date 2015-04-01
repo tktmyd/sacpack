@@ -33,6 +33,9 @@ program sac2bin
      stop
   end if
 
+  call system__getarg(1, fn_in  )
+  call system__getarg(2, fn_out )
+  
   call sac__read( fn_in, sh, dat )
   allocate(odat(2,1:sh%npts) )
 
