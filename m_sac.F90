@@ -22,7 +22,6 @@ module m_sac
   public :: sac__rhdr    ! read header
   public :: sac__whdr    ! read header
 
-
   !! --------------------------------------------------------------------------------------------------------------------------- !!
   !>
   !! Sac Header Type Definition
@@ -91,7 +90,9 @@ module m_sac
      logical       :: lcalda          ! is calc distance azimuth      (109)
      character(8)  :: kstnm           ! station name                  (111)
      character(16) :: kevnm           ! event name                    (113)
-     character(8)  :: ka              ! time pick name                (123)
+     character(8)  :: khole           ! hole name                     (117)
+     character(8)  :: ko              ! origin time identification    (119)
+     character(8)  :: ka              ! time pick name                (121)
      character(8)  :: kt0             ! time pick name                (123)
      character(8)  :: kt1             ! time pick name                (125)
      character(8)  :: kt2             ! time pick name                (127)
@@ -102,6 +103,7 @@ module m_sac
      character(8)  :: kt7             ! time pick name                (137)
      character(8)  :: kt8             ! time pick name                (139)
      character(8)  :: kt9             ! time pick name                (141)
+     character(8)  :: kf              ! fini identification           (143)
      character(8)  :: kuser0          ! user area                     (145)
      character(8)  :: kuser1          ! user area                     (147)
      character(8)  :: kuser2          ! user area                     (149)
@@ -109,7 +111,25 @@ module m_sac
      character(8)  :: knetwk          ! network name                  (153)
      character(8)  :: kdatrd          ! date data onto comp.          (155)
      character(8)  :: kinst           ! instrument                    (157)
-     
+
+     !! Unofficial header at unused blocks
+     real(DP) :: user10 ! user header (064)
+     real(DP) :: user11 ! user header (065)
+     real(DP) :: user12 ! user header (066)
+     real(DP) :: user13 ! user header (067)
+     real(DP) :: user14 ! user header (068)
+     real(DP) :: user15 ! user header (069)
+     real(DP) :: user16 ! user header (070)
+     integer  :: iuser0 ! user header (098)
+     integer  :: iuser1 ! user header (099)
+     integer  :: iuser2 ! user header (100)
+     integer  :: iuser3 ! user header (101)
+     integer  :: iuser4 ! user header (102)
+     integer  :: iuser5 ! user header (103)
+     integer  :: iuser6 ! user header (104)
+     integer  :: iuser7 ! user header (105)
+     logical  :: luser0 ! user header (110)
+
      !! associated information from sac header
      integer :: nzmonth ! month of begin time from nzjday
      integer :: nzday   ! day   of begin time from nzjday
@@ -158,9 +178,10 @@ module m_sac
      
   end interface
   !! --------------------------------------------------------------------------------------------------------------------------- !!
-  
+
 contains
-  
+
+
   !! --------------------------------------------------------------------------------------------------------------------------- !!
   !>
   !! Read the sac file fn_sac
@@ -174,13 +195,13 @@ contains
     type(sac__hdr),        intent(out)   :: ss      !< header info
     real(DP), allocatable, intent(inout) :: dat(:)  !< waveform data
     real(SP), allocatable                :: fdat(:)
-
     !! ----
     
     call rsac_s( fn_sac, ss, fdat )
 
     if( .not. allocated( dat ) )  allocate( dat(1:ss%npts) )
     dat = dble(fdat)
+    deallocate(fdat)
     
   end subroutine rsac_d
   !! --------------------------------------------------------------------------------------------------------------------------- !!
@@ -250,17 +271,21 @@ contains
     !! -- Arguments
     character(*),   intent(in)           :: fn_sac
     type(sac__hdr), intent(in)           :: ss
-    real(DP),       intent(in)           :: dat(1:ss%npts)
+    real(DP),       intent(in)           :: dat(:)
     logical,        intent(in), optional :: overwrite
-
+    real(SP), allocatable :: fdat(:)
     !! ----
     
+    allocate(fdat(1:ss%npts))
+    fdat(1:ss%npts) = real(dat(1:ss%npts))
+
     if( present( overwrite) ) then
-       call wsac_s( fn_sac, ss, real(dat), overwrite) 
+       call wsac_s( fn_sac, ss, fdat, overwrite) 
     else
-       call wsac_s( fn_sac, ss, real(dat) )
+       call wsac_s( fn_sac, ss, fdat )
     end if
-    
+
+    deallocate( fdat )
   end subroutine wsac_d
   !! --------------------------------------------------------------------------------------------------------------------------- !!
 
@@ -273,7 +298,7 @@ contains
     !! -- Arguments
     character(*),   intent(in)           :: fn_sac
     type(sac__hdr), intent(in)           :: ss
-    real(SP),       intent(in)           :: dat(1:ss%npts)
+    real(SP),       intent(in)           :: dat(:)
     logical,        intent(in), optional :: overwrite
 
     logical        :: isexist
@@ -347,49 +372,56 @@ contains
 
 
     ! Copy header data to temprary arrays
-    fheader(  1) = ss % delta
-    fheader(  2) = ss % depmin
-    fheader(  3) = ss % depmax
-    fheader(  6) = ss % b     
-    fheader(  7) = ss % e     
-    fheader(  8) = ss % o     
-    fheader(  9) = ss % a     
-    fheader( 11) = ss % t0    
-    fheader( 12) = ss % t1    
-    fheader( 13) = ss % t2    
-    fheader( 14) = ss % t3    
-    fheader( 15) = ss % t4    
-    fheader( 16) = ss % t5    
-    fheader( 17) = ss % t6    
-    fheader( 18) = ss % t7    
-    fheader( 19) = ss % t8    
-    fheader( 20) = ss % t9    
-    fheader( 32) = ss % stla  
-    fheader( 33) = ss % stlo  
-    fheader( 34) = ss % stel  
-    fheader( 35) = ss % stdp  
-    fheader( 36) = ss % evla  
-    fheader( 37) = ss % evlo  
-    fheader( 38) = ss % evel  
-    fheader( 39) = ss % evdp  
-    fheader( 40) = ss % mag   
-    fheader( 41) = ss % user0 
-    fheader( 42) = ss % user1 
-    fheader( 43) = ss % user2 
-    fheader( 44) = ss % user3 
-    fheader( 45) = ss % user4 
-    fheader( 46) = ss % user5 
-    fheader( 47) = ss % user6 
-    fheader( 48) = ss % user7 
-    fheader( 49) = ss % user8 
-    fheader( 50) = ss % user9 
-    fheader( 51) = ss % dist  
-    fheader( 52) = ss % az    
-    fheader( 53) = ss % baz   
-    fheader( 54) = ss % gcarc 
-    fheader( 57) = ss % depmen
-    fheader( 58) = ss % cmpaz 
-    fheader( 59) = ss % cmpinc
+    fheader(  1) = real( int( ss % delta * 1d7 ) ) / 1e7
+    fheader(  2) = real( ss % depmin )
+    fheader(  3) = real( ss % depmax )
+    fheader(  6) = real( ss % b      )
+    fheader(  7) = real( ss % e      )
+    fheader(  8) = real( ss % o      )
+    fheader(  9) = real( ss % a      )
+    fheader( 11) = real( ss % t0     )
+    fheader( 12) = real( ss % t1     )
+    fheader( 13) = real( ss % t2     )
+    fheader( 14) = real( ss % t3     )
+    fheader( 15) = real( ss % t4     )
+    fheader( 16) = real( ss % t5     )
+    fheader( 17) = real( ss % t6     )
+    fheader( 18) = real( ss % t7     )
+    fheader( 19) = real( ss % t8     )
+    fheader( 20) = real( ss % t9     )
+    fheader( 32) = real( ss % stla   )
+    fheader( 33) = real( ss % stlo   )
+    fheader( 34) = real( ss % stel   )
+    fheader( 35) = real( ss % stdp   )
+    fheader( 36) = real( ss % evla   )
+    fheader( 37) = real( ss % evlo   )
+    fheader( 38) = real( ss % evel   )
+    fheader( 39) = real( ss % evdp   )
+    fheader( 40) = real( ss % mag    )
+    fheader( 41) = real( ss % user0  )
+    fheader( 42) = real( ss % user1  )
+    fheader( 43) = real( ss % user2  )
+    fheader( 44) = real( ss % user3  )
+    fheader( 45) = real( ss % user4  )
+    fheader( 46) = real( ss % user5  )
+    fheader( 47) = real( ss % user6  )
+    fheader( 48) = real( ss % user7  )
+    fheader( 49) = real( ss % user8  )
+    fheader( 50) = real( ss % user9  )
+    fheader( 51) = real( ss % dist   )
+    fheader( 52) = real( ss % az     )
+    fheader( 53) = real( ss % baz    )
+    fheader( 54) = real( ss % gcarc  )
+    fheader( 57) = real( ss % depmen )
+    fheader( 58) = real( ss % cmpaz  )
+    fheader( 59) = real( ss % cmpinc )
+    fheader( 64) = real( ss % user10 )
+    fheader( 65) = real( ss % user11 )
+    fheader( 66) = real( ss % user12 )
+    fheader( 67) = real( ss % user13 )
+    fheader( 68) = real( ss % user14 )
+    fheader( 69) = real( ss % user15 )
+    fheader( 70) = real( ss % user16 )
     
     iheader( 71) = ss % nzyear
     iheader( 72) = ss % nzjday
@@ -403,14 +435,28 @@ contains
     iheader( 87) = ss % idep
     iheader( 93) = ss % ievtyp
     
+    iheader( 98) = ss % iuser0
+    iheader( 99) = ss % iuser1
+    iheader(100) = ss % iuser2
+    iheader(101) = ss % iuser3
+    iheader(102) = ss % iuser4
+    iheader(103) = ss % iuser5
+    iheader(104) = ss % iuser6
+    iheader(105) = ss % iuser7
+    
     lheader(106) = ss % leven
     lheader(107) = ss % lpspol
     lheader(108) = ss % lovrok
     lheader(109) = ss % lcalda
     
+    lheader(110) = ss % luser0
+
     aheader(111) = ss%kstnm(1:4);  aheader(112) = ss%kstnm(5:8)
     aheader(113) = ss%kevnm(1:4);  aheader(114) = ss%kevnm(5:8)
     aheader(115) = ss%kevnm(9:12); aheader(116) = ss%kevnm(13:16)
+    aheader(117) = ss%khole(1:4);  aheader(118) = ss%khole(5:8)
+    aheader(119) = ss%ko(1:4);     aheader(120) = ss%ko(5:8)
+    aheader(121) = ss%ka(1:4);     aheader(122) = ss%ka(5:8)
     aheader(123) = ss%kt0(1:4);    aheader(124) = ss%kt0(5:8)
     aheader(125) = ss%kt1(1:4);    aheader(126) = ss%kt1(5:8)
     aheader(127) = ss%kt2(1:4);    aheader(128) = ss%kt2(5:8)
@@ -421,6 +467,7 @@ contains
     aheader(137) = ss%kt7(1:4);    aheader(138) = ss%kt7(5:8)
     aheader(139) = ss%kt8(1:4);    aheader(140) = ss%kt8(5:8)
     aheader(141) = ss%kt9(1:4);    aheader(142) = ss%kt9(5:8)
+    aheader(143) = ss%kf(1:4);     aheader(143) = ss%kf(5:8)
     aheader(145) = ss%kuser0(1:4); aheader(146) = ss%kuser0(5:8)
     aheader(147) = ss%kuser1(1:4); aheader(148) = ss%kuser1(5:8)
     aheader(149) = ss%kuser2(1:4); aheader(150) = ss%kuser2(5:8)
@@ -514,6 +561,9 @@ contains
     ss%kstnm   = cerr
     ss%kcmpnm  = cerr
     ss%kevnm   = cerr
+    ss%khole   = cerr
+    ss%ko      = cerr
+    ss%ka      = cerr
     ss%kt0     = cerr
     ss%kt1     = cerr
     ss%kt2     = cerr
@@ -524,6 +574,7 @@ contains
     ss%kt7     = cerr
     ss%kt8     = cerr
     ss%kt9     = cerr
+    ss%kf      = cerr
     ss%kuser0  = cerr
     ss%kuser1  = cerr
     ss%kuser2  = cerr
@@ -534,7 +585,25 @@ contains
     ss%nzmonth = ierr
     ss%nzday   = ierr
     ss%tim     = ierr
-    
+
+    !! inoficial headers
+    ss%user10 = ferr
+    ss%user11 = ferr
+    ss%user12 = ferr
+    ss%user13 = ferr
+    ss%user14 = ferr
+    ss%user15 = ferr
+    ss%user16 = ferr
+    ss%iuser0 = ierr
+    ss%iuser1 = ierr
+    ss%iuser2 = ierr
+    ss%iuser3 = ierr
+    ss%iuser4 = ierr
+    ss%iuser5 = ierr
+    ss%iuser6 = ierr
+    ss%iuser7 = ierr
+    ss%luser0 = .false.
+
   end subroutine sac__init
   !! --------------------------------------------------------------------------------------------------------------------------- !!
 
@@ -554,32 +623,25 @@ contains
     logical      :: lheader(106:110)
     integer      :: nvhdr
     character(4) :: aheader(111:158)
-
     !! ----
     
-    ! endian check
-    read(io,pos=77*4-3) nvhdr
-    if( 1<= nvhdr .and. nvhdr <= 6 ) then
-       ss%is_same_endian = .true.
-    else
-       ss%is_same_endian = .false.
-    end if
-
-    read(io,pos=1) fheader
-    read(io)       iheader
-    read(io)       lheader
-    read(io)       aheader
+    read(io) fheader
+    read(io) iheader
+    read(io) lheader
+    read(io) aheader
+    nvhdr = iheader( 77) 
+    ss%is_same_endian = ( 1 <= nvhdr .and. nvhdr <= 6 )
     
     if( .not. ss%is_same_endian ) then
-       do i=  1, 70
-          call endian__change(fheader(i))
-       end do
-       do i= 71,105
-          call endian__change(iheader(i))
-       end do
-       do i=106,110
-          call endian__change(lheader(i))
-       end do
+      do i=  1, 70
+        call endian__change(fheader(i))
+      end do
+      do i= 71,105
+        call endian__change(iheader(i))
+      end do
+      do i=106,110
+        call endian__change(lheader(i))
+      end do
     end if
     
     ss % delta  = dble( int( fheader(  1) * 1d7 + 0.5 ) ) / 1d7
@@ -645,6 +707,9 @@ contains
     
     ss % kstnm  = aheader(111) // aheader(112)
     ss % kevnm  = aheader(113) // aheader(114) // aheader(115) // aheader(116)
+    ss % khole  = aheader(117) // aheader(118)
+    ss % ko     = aheader(119) // aheader(120)
+    ss % ka     = aheader(121) // aheader(122)
     ss % kt0    = aheader(123) // aheader(124)
     ss % kt1    = aheader(125) // aheader(126)
     ss % kt2    = aheader(127) // aheader(128)
@@ -655,6 +720,7 @@ contains
     ss % kt7    = aheader(137) // aheader(138)
     ss % kt8    = aheader(139) // aheader(140)
     ss % kt9    = aheader(141) // aheader(142)
+    ss % kf     = aheader(143) // aheader(144)
     ss % kuser0 = aheader(145) // aheader(146)
     ss % kuser1 = aheader(147) // aheader(148)
     ss % kuser2 = aheader(149) // aheader(150)
@@ -681,7 +747,24 @@ contains
     call char_zeropad( ss%kcmpnm )
     call char_zeropad( ss%knetwk )
     
-    
+    !! unofficieal headers
+    ss % user10 = dble( fheader( 64) )
+    ss % user11 = dble( fheader( 65) )
+    ss % user12 = dble( fheader( 66) )
+    ss % user13 = dble( fheader( 67) )
+    ss % user14 = dble( fheader( 68) )
+    ss % user15 = dble( fheader( 69) )
+    ss % user16 = dble( fheader( 70) )
+    ss % iuser0 = iheader( 98)
+    ss % iuser1 = iheader( 99)
+    ss % iuser2 = iheader(100)
+    ss % iuser3 = iheader(101)
+    ss % iuser4 = iheader(102)
+    ss % iuser5 = iheader(103)
+    ss % iuser6 = iheader(104)
+    ss % iuser7 = iheader(105)
+    ss % luser0 = lheader(110)
+
   end subroutine sac__rhdr
   !! --------------------------------------------------------------------------------------------------------------------------- !!
   
