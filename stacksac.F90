@@ -39,6 +39,7 @@ program stacksac
   logical               :: is_exist
   real(DP), allocatable :: dat(:)
   real(DP), allocatable :: stackdat(:)
+  real(DP)              :: maxv
   !! ----
 
   !!
@@ -70,7 +71,16 @@ program stacksac
   !! Read the first file
   !!
   call sac__read( fn_sac(1), sh_out, dat )
-  if( is_normalize ) dat(:) = dat(:) / maxval( abs(dat(:)) )
+  if( is_normalize ) then
+    maxv = maxval( abs(dat(:)) )
+    if( maxv > 0 ) then
+      dat(:) = dat(:) / maxval( abs(dat(:)) )
+    else
+      write(STDERR,'(A)') 'WARNING [stacksac]: maximum amplitude is zero in a file ' // trim(fn_sac(1))
+      dat(:) = 0.0
+    end if
+  end if
+
 
   allocate( stackdat(sh_out%npts) )
   stackdat(:) = dat(:)
@@ -93,10 +103,18 @@ program stacksac
         stop
      end if
 
-     if( is_normalize ) dat(:) = dat(:) / maxval( abs(dat(:)) )
-     stackdat(:) = stackdat(:) + dat(:)
-     deallocate(dat)
-  end do
+      if( is_normalize ) then
+         maxv = maxval( abs(dat(:)) )
+         if( maxv > 0 ) then
+            dat(:) = dat(:) / maxval( abs(dat(:)) )
+         else
+            write(STDERR,'(A)') 'WARNING [stacksac]: maximum amplitude is zero in a file ' // trim(fn_sac(1))
+            dat(:) = 0.0
+         end if
+      end if
+      stackdat(:) = stackdat(:) + dat(:)
+      deallocate(dat)
+   end do
 
   if( is_normalize ) stackdat(:) = stackdat(:) / maxval( abs(stackdat(:)) )
   call sac__write( fn_out, sh_out, stackdat, overwrite=.true. )
