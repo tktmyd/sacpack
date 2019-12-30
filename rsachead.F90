@@ -1,6 +1,6 @@
 !! ----------------------------------------------------------------------------------------------------------------------------- !!
 !>
-!! Read SAC header and display to standard output
+!! Read SAC header and display to standard output. Compatible to official saclst command
 !!
 !! @usage rsachead.x  sacfile  header_name  -v 
 !<
